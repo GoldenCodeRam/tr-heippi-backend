@@ -1,0 +1,175 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+    provider = "prisma-client-js"
+}
+
+datasource db {
+    provider = "postgresql"
+    url      = env("DATABASE_URL")
+}
+
+// Entities tables
+
+model Role {
+    Id   Int    @id @default(autoincrement())
+    Name String
+
+    RolePermission RolePermission[]
+    User           User[]
+}
+
+model Permission {
+    Id   Int    @id @default(autoincrement())
+    Name String
+
+    UserRolePermission RolePermission[]
+}
+
+model MedicalService {
+    Id   Int    @id @default(autoincrement())
+    Name String
+
+    HospitalMedicalService HospitalMedicalService[]
+}
+
+model MedicalSpecialty {
+    Id   Int    @id @default(autoincrement())
+    Name String
+
+    ObservationMedicalSpecialty ObservationMedicalSpecialty[]
+}
+
+model DocumentType {
+    Id   Int    @id @default(autoincrement())
+    Name String @unique
+
+    User User[]
+}
+
+model UserStatus {
+    Id     Int    @id @default(autoincrement())
+    Status String
+
+    User User[]
+}
+
+// Entities with relationships
+
+model User {
+    Id       Int    @id @default(autoincrement())
+    Email    String @unique
+    Document String @unique
+    Phone    String
+    Password String
+
+    RoleId Int
+    Role   Role @relation(fields: [RoleId], references: [Id])
+
+    DocumentTypeId Int
+    DocumentType   DocumentType @relation(fields: [DocumentTypeId], references: [Id])
+
+    UserStatusId Int
+    UserStatus   UserStatus @relation(fields: [UserStatusId], references: [Id])
+
+    Hospital             Hospital[]
+    Medic                Medic[]
+    Patient              Patient[]
+    UserConfirmationCode UserConfirmationCode[]
+}
+
+model UserConfirmationCode {
+    Code           String
+    GenerationDate DateTime
+    ExpirationDate DateTime
+
+    UserId Int
+    User   User @relation(fields: [UserId], references: [Id])
+
+    @@id([Code, UserId])
+}
+
+model Hospital {
+    Id      Int    @id @default(autoincrement())
+    Name    String
+    Address String
+
+    UserId Int
+    User   User @relation(fields: [UserId], references: [Id])
+
+    Medic                  Medic[]
+    HospitalMedicalService HospitalMedicalService[]
+}
+
+model Medic {
+    Id      Int    @id @default(autoincrement())
+    Name    String
+    Address String
+
+    HospitalId Int
+    Hospital   Hospital @relation(fields: [HospitalId], references: [Id])
+
+    UserId Int
+    User   User @relation(fields: [UserId], references: [Id])
+
+    MedicalObservation MedicalObservation[]
+}
+
+model Patient {
+    Id        Int      @id @default(autoincrement())
+    FirstName String
+    LastName  String
+    Birthdate DateTime
+
+    UserId Int
+    User   User @relation(fields: [UserId], references: [Id])
+
+    MedicalObservation MedicalObservation[]
+}
+
+model MedicalObservation {
+    Id          Int    @id @default(autoincrement())
+    Observation String
+    Status      String
+
+    Medic   Medic @relation(fields: [MedicId], references: [Id])
+    MedicId Int
+
+    Patient   Patient @relation(fields: [PatientId], references: [Id])
+    PatientId Int
+
+    ObservationMedicalSpecialty ObservationMedicalSpecialty[]
+}
+
+// Weak entities
+
+model RolePermission {
+    RoleId Int
+    Role   Role @relation(fields: [RoleId], references: [Id])
+
+    PermissionId Int
+    Permission   Permission @relation(fields: [PermissionId], references: [Id])
+
+    @@id([RoleId, PermissionId])
+}
+
+model HospitalMedicalService {
+    HospitalId       Int
+    MedicalServiceId Int
+
+    Hospital       Hospital       @relation(fields: [HospitalId], references: [Id])
+    MedicalService MedicalService @relation(fields: [MedicalServiceId], references: [Id])
+
+    @@id([HospitalId, MedicalServiceId])
+}
+
+model ObservationMedicalSpecialty {
+    MedicalObservationId Int
+    MedicalSpecialtyId   Int
+
+    MedicalObservation MedicalObservation @relation(fields: [MedicalObservationId], references: [Id])
+    MedicalSpecialty   MedicalSpecialty   @relation(fields: [MedicalSpecialtyId], references: [Id])
+
+    @@id([MedicalObservationId, MedicalSpecialtyId])
+}
